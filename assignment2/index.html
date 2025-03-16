@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Student Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Student Management</h2>
+
+        <form id="student-form" class="form">
+            <input type="hidden" id="student-id">
+            <input type="text" id="name" placeholder="Enter Name" required>
+            <input type="number" id="age" placeholder="Enter Age" required min="1">
+            <input type="email" id="email" placeholder="Enter Email" required>
+            <button type="submit">Add Student</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="student-list"></tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchStudents();
+
+            document.getElementById("student-form").addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                let name = document.getElementById("name").value;
+                let age = parseInt(document.getElementById("age").value);
+                let email = document.getElementById("email").value;
+
+                if (age <= 0) {
+                    alert("Please enter a valid age greater than 0.");
+                    return;
+                }
+
+                let id = document.getElementById("student-id").value;
+                let action = id ? "edit" : "add";
+
+                fetch("data.php", {
+                    method: "POST",
+                    body: JSON.stringify({ action, id, name, age, email }),
+                    headers: { "Content-Type": "application/json" }
+                }).then(() => {
+                    fetchStudents();
+                    document.getElementById("student-form").reset();
+                    document.getElementById("student-id").value = "";
+                });
+            });
+        });
+
+        function fetchStudents() {
+            fetch("data.php")
+                .then(response => response.json())
+                .then(data => {
+                    let studentList = document.getElementById("student-list");
+                    studentList.innerHTML = "";
+                    data.forEach(student => {
+                        studentList.innerHTML += `
+                            <tr>
+                                <td>${student.id}</td>
+                                <td>${student.name}</td>
+                                <td>${student.age}</td>
+                                <td>${student.email}</td>
+                                <td>
+                                    <button class="edit-btn" onclick="editStudent(${student.id}, '${student.name}', ${student.age}, '${student.email}')">Edit</button>
+                                    <button class="delete-btn" onclick="deleteStudent(${student.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        function editStudent(id, name, age, email) {
+            document.getElementById("student-id").value = id;
+            document.getElementById("name").value = name;
+            document.getElementById("age").value = age;
+            document.getElementById("email").value = email;
+        }
+
+        function deleteStudent(id) {
+            fetch("data.php", {
+                method: "POST",
+                body: JSON.stringify({ action: "delete", id }),
+                headers: { "Content-Type": "application/json" }
+            }).then(() => fetchStudents());
+        }
+    </script>
+</body>
+</html>
